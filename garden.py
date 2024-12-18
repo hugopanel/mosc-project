@@ -1,35 +1,45 @@
 import networkx as nx
 import numpy as np
+from IPython.display import display, clear_output
+import matplotlib.pyplot as plt
 
 def build_garden(rows, cols):
-    # Create the graph
-    G = nx.grid_2d_graph(rows, cols)
+    G = nx.grid_2d_graph(rows, cols)  # Nodes are in (row, col) format
 
-    # Map the nodes to numeric labels as per your description
-    mapping = {(i, j): i * cols + j + 1 for i, j in G.nodes}
-    G = nx.relabel_nodes(G, mapping)
-
-    # Adding diagonal edges to the graph
+    # Add diagonal edges to the graph
     for i in range(rows):
         for j in range(cols):
-            current_node = i * cols + j + 1
+            current_node = (i, j)
             # Add diagonal connections
             if i < rows - 1 and j < cols - 1:  # Bottom-right diagonal
-                G.add_edge(current_node, (i + 1) * cols + (j + 1) + 1)
+                G.add_edge(current_node, (i + 1, j + 1))
             if i < rows - 1 and j > 0:  # Bottom-left diagonal
-                G.add_edge(current_node, (i + 1) * cols + (j - 1) + 1)
-
-    pos = {node: (((node - 1) % cols), -((node - 1) // cols)) for node in G.nodes}
-
-    return (G, pos)
+                G.add_edge(current_node, (i + 1, j - 1))
+    return (G)
 
 rows, cols = 10, 10
-G , pos= build_garden(rows, cols)
+G = build_garden(rows, cols)
 
+tree_dict = {"tree1": {"ADN": [0,3,6], "nodes":[]},
+             "tree2": {"ADN": [0,3,6], "nodes":[]}}
+
+print(tree_dict)
+color_map = []
+for node in G.nodes:
+    if node in tree_dict["tree1"]["nodes"]:
+        color_map.append("green")
+        continue
+
+custom_labels = {}
+for node in G.nodes:
+    for tree_name, tree_data in tree_dict.items():
+        if node in tree_data["nodes"]:
+            custom_labels[node] = tree_name
 
 # Visualization of the graph
 plt.figure(figsize=(10, 10))
-nx.draw(G, pos, with_labels=True, node_size=1000, node_color="skyblue", font_size=10)
+pos = {(i, j): (j, -i) for i, j in G.nodes}  # Arrange nodes in grid format
+nx.draw(G, pos,labels=custom_labels, with_labels=True, node_size=1000, node_color=color_map, font_size=10)
 plt.show()
 
 
