@@ -45,20 +45,29 @@ class Label(UIComponent):
 def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
     if node_properties['type'] == engine.entities.TYPE_EMPTY:
         return
-    if node_properties['type'] == engine.entities.TYPE_SEED:
-        type_name = "Seed"
-    elif node_properties['type'] == engine.entities.TYPE_TREE:
-        type_name = engine.entities.get_species_name(node_properties['species']['code']) + " [{code}]".format(code="".join(str(c) for c in node_properties['species']['code'])) 
+    if node_properties['type'] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+        type_name = engine.entities.get_species_name(node_properties['code']) + " {type} [{code}]".format(type="Seed" if node_properties["type"] == engine.entities.TYPE_SEED else "Tree", code="".join(str(c) for c in node_properties['code'])) 
     else:
         type_name = "Wall"
-
-    row1 = engine.config.font_heading.render("{coordinates} {type_name}".format(coordinates=node_coordinates, type_name=type_name), True, "white")
-    row2 = engine.config.font_small.render("Status: sick [AC]", True, "gray")
-    row3 = engine.config.font_small.render("Age: 3 cycles", True, "gray")
-    row4 = engine.config.font_small.render("Production: +5/cycle", True, "gray")
     
-    box_width = 10 + max(row1.get_width(), row2.get_width(), row3.get_width(), row4.get_width())
-    box_height = 10 + row1.get_height() + 10 + row2.get_height() + 5 + row3.get_height() + 5 + row4.get_height()
+    if len(node_properties["sicknesses"]) > 0:
+        status = "Sick {0}".format(node_properties["sicknesses"])
+    else:
+        status = "healthy"
+
+    rows = []
+    rows.append(engine.config.font_heading.render("{coordinates} {type_name}".format(coordinates=node_coordinates, type_name=type_name), True, "white"))
+    rows.append(engine.config.font_small.render("Status: {status}".format(status=status), True, "gray"))
+    if node_properties['type'] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+        if node_properties["growth"] >= engine.config.default_max_growth:
+            rows.append(engine.config.font_small.render("Age: {age}".format(age=node_properties["age"]), True, "gray"))
+        else:
+            rows.append(engine.config.font_small.render("Age: {age}, Growth: {growth}".format(age=node_properties["age"], growth=node_properties["growth"]), True, "gray"))
+        rows.append(engine.config.font_small.render(f"Health: {round(node_properties["health"], 1)}", True, "gray"))
+        rows.append(engine.config.font_small.render("Production: +5/cycle", True, "gray"))
+
+    box_width = 10 + max(row.get_width() for row in rows)
+    box_height = 10 + rows[0].get_height() + 5 + sum((5 + row.get_height()) for row in rows[1:])
     
     tooltip_box = pygame.Surface((box_width, box_height))
     position = pygame.mouse.get_pos()[0] + 10, pygame.mouse.get_pos()[1] + 10
@@ -70,10 +79,8 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
         position = position[0], engine.config.screen_height - box_height - 10
     
     screen.blit(tooltip_box, position)
-    screen.blit(row1, (position[0] + 5, position[1] + 5))
-    screen.blit(row2, (position[0] + 5, position[1] + 10 + row1.get_height()))
-    screen.blit(row3, (position[0] + 5, position[1] + 10 + row1.get_height() + 5 + row2.get_height()))
-    screen.blit(row4, (position[0] + 5, position[1] + 10 + row1.get_height() + 5 + row2.get_height() + 5 + row3.get_height()))
+    for i in range(len(rows)):
+        screen.blit(rows[i], (position[0] + 5, position[1] + 5 + sum(5 + row.get_height() for row in rows[:i])))
 
 
 class GardenTile(pygame.sprite.Sprite):

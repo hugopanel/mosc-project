@@ -1,5 +1,6 @@
 import os
 from math import floor
+from random import randint
 
 import pygame
 import engine.ui
@@ -8,6 +9,8 @@ import engine.config
 import engine.events
 import engine.config
 import engine.entities
+from engine.config import production_code_increase, default_max_growth
+from engine.entities import growth
 from engine.ui import draw_tree_tooltip
 
 
@@ -120,27 +123,50 @@ def main():
         selected_tile_x, selected_tile_y = get_current_selected_tile(garden)
         if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
             selected_tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
+            node = garden.graph.nodes[(selected_tile_x, selected_tile_y)]
+            
+            # Reset node
+            node["sicknesses"] = []
+            node["age"] = 0
+            node["code"] = []
+            node["growth"] = 0
+            node["health"] = engine.config.default_seed_starting_health
+            
+            # Update node property
             if inventory.selected_item == 0: # Place wall
                 selected_tile.tile_number = 3
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_WALL
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_EMPTY
-            elif inventory.selected_item in [1, 2, 3, 4]: # Place tree
-                selected_tile.tile_number = 2
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_TREE
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_HEALTHY
+                node["type"] = engine.entities.TYPE_WALL
+            elif inventory.selected_item in [1, 2, 3, 4]: # Place seed
+                selected_tile.tile_number = 1
+                node["type"] = engine.entities.TYPE_SEED
                 if inventory.selected_item == 1:
-                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[0]
+                    node["code"] = engine.entities.known_tree_species[0]["code"]
                 elif inventory.selected_item == 2:
-                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[1]
+                    node["code"] = engine.entities.known_tree_species[1]["code"]
                 elif inventory.selected_item == 3:
-                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[2]
+                    node["code"] = engine.entities.known_tree_species[2]["code"]
                 elif inventory.selected_item == 4:
-                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[3]
+                    node["code"] = engine.entities.known_tree_species[3]["code"]
             elif inventory.selected_item == 5:
                 selected_tile.tile_number = 0
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_EMPTY
-                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_EMPTY
+                node["type"] = engine.entities.TYPE_EMPTY
 
+    simulation_running = False
+    cycle_count = 0
+    time_to_next_cycle = engine.config.cycle_length
+    
+    def toggle_simulation_running(event):
+        nonlocal simulation_running
+        simulation_running = not simulation_running
+    
+    def display_time():
+        height = 30
+        position_x = 0
+        position_y = engine.config.screen_height - height
+        text = engine.config.font_big.render(f"Simulation Running: {simulation_running} | Cycle: {round(cycle_count + (engine.config.cycle_length-time_to_next_cycle)/engine.config.cycle_length, 2)}", True, "white")
+        pygame.draw.rect(engine.config.screen, "black", (position_x, position_y, engine.config.screen_width, height))
+        engine.config.screen.blit(text, (position_x + 10, position_y + round(height / 2) - round(text.get_height()) / 2))
+    
     # KEY MAPPING
     event_handler.add_key_handler(pygame.K_1, select_item_wall)
     event_handler.add_key_handler(pygame.K_2, select_item_2)
@@ -148,24 +174,61 @@ def main():
     event_handler.add_key_handler(pygame.K_4, select_item_4)
     event_handler.add_key_handler(pygame.K_5, select_item_5)
     event_handler.add_key_handler(pygame.K_6, select_item_eraser)
+    event_handler.add_key_handler(pygame.K_p, toggle_simulation_running)
     event_handler.add_handler(pygame.MOUSEBUTTONDOWN, begin_placing)
     event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
 
-    sprite_sheet = pygame.image.load(os.path.join("assets", "Tileset.png")).convert()
     
     while engine.config.running:
         event_handler.pump_events()
 
-        engine.config.screen.fill("white")
-        
+        # LOGIC
+        # Allow player to place tiles
         if placing:
             place_tree()
         
+        # Handle time    
+        if simulation_running:
+            time_to_next_cycle -= 1
+            if time_to_next_cycle <= 0:
+                # Update time
+                time_to_next_cycle = engine.config.cycle_length
+                cycle_count += 1
+                
+                # Update nodes
+                for node_name in garden.graph.nodes:
+                    node = garden.graph.nodes[node_name]
+                    
+                    # Increase node age
+                    node["age"] += 1
+                    
+                    # Seeds and trees
+                    if node["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+                        # Regenerate health
+                        if node["health"] < engine.config.default_max_health:
+                            node["health"] = round(node["health"] * engine.config.default_health_regeneration_multiplier, 1) 
+                            if node["health"] > engine.config.default_max_health: node["health"] = engine.config.default_max_health 
+                    
+                    # Seeds
+                    if node["type"] in [engine.entities.TYPE_SEED]:
+                        # Grow seed
+                        if randint(0, 100) >= (engine.config.default_growth_probability*100):
+                            node["growth"] += 1 + production_code_increase*(sum(node["code"].count(x) for x in growth))
+                            if node["growth"] >= default_max_growth:
+                                node["type"] = engine.entities.TYPE_TREE
+                                garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 2
+
+        # DRAWING
+        engine.config.screen.fill("white")
+        
+        # Update garden position according to window size
         garden.position_x = floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2)
         garden.position_y = floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2)
+        
         garden.draw()
         inventory.draw()
         
+        # Show hovered tile as variant
         selected_tile_x, selected_tile_y = get_current_selected_tile(garden)
         
         for row in garden.garden_tiles:
@@ -176,7 +239,10 @@ def main():
             garden.garden_tiles[selected_tile_y][selected_tile_x].variant = True
             draw_tree_tooltip(engine.config.screen, (selected_tile_x, selected_tile_y), garden.graph.nodes[(selected_tile_x, selected_tile_y)])
         
-        pygame.display.flip()
+        # Display time
+        display_time()
+        
+        pygame.display.flip() # Flip buffer
         engine.config.clock.tick(60)
 
     pygame.quit()

@@ -3,6 +3,7 @@
 import networkx as nx
 
 import engine.entities
+import engine.config
 
 
 def generate_garden(rows, cols):
@@ -20,9 +21,10 @@ def generate_garden(rows, cols):
 
     for node in g.nodes():
         g.nodes[node]["type"] = engine.entities.TYPE_EMPTY
-        g.nodes[node]["status"] = engine.entities.STATUS_EMPTY
-        # g.nodes[node]["species"]= {"name": "apple", "code": [2,4,6]}
-        g.nodes[node]["species"] = {}
+        g.nodes[node]["sicknesses"] = []
         g.nodes[node]["age"] = 0
+        g.nodes[node]["code"] = []
+        g.nodes[node]["growth"] = 0
+        g.nodes[node]["health"] = engine.config.default_seed_starting_health
 
     return g
