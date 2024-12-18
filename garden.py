@@ -20,7 +20,7 @@ def build_garden(rows, cols):
 rows, cols = 10, 10
 G = build_garden(rows, cols)
 
-tree_dict = {"tree1": {"ADN": [0,3,6], "nodes":[]},
+tree_dict = {"tree1": {"ADN": [0,3,6], "nodes":[(1,1)]},
              "tree2": {"ADN": [0,3,6], "nodes":[]}}
 
 print(tree_dict)
@@ -29,6 +29,7 @@ for node in G.nodes:
     if node in tree_dict["tree1"]["nodes"]:
         color_map.append("green")
         continue
+    color_map.append("gray")
 
 custom_labels = {}
 for node in G.nodes:
