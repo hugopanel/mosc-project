@@ -1,3 +1,6 @@
+import os
+from math import floor
+
 import networkx
 import pygame
 import engine.ui
@@ -42,10 +45,16 @@ class Inventory:
 
 def main():
     pygame.init()
-    engine.config.screen = pygame.display.set_mode((1280, 720))
+    engine.config.screen = pygame.display.set_mode((engine.config.screen_width, engine.config.screen_height), pygame.RESIZABLE)
     engine.config.clock = pygame.time.Clock()
     engine.config.running = True
     pygame.display.set_caption("Treevolution")
+    
+    # Initialize fonts
+    engine.config.font_big = pygame.font.Font(None, 36)
+    engine.config.font_heading = pygame.font.Font(None, 30)
+    engine.config.font_small = pygame.font.Font(None, 24)
+
 
     # Initialize event handler
     event_handler = engine.events.EventHandler()
@@ -54,20 +63,15 @@ def main():
     def quit_game(event):
         engine.config.running = False
     event_handler.add_handler(pygame.QUIT, quit_game)
+    
+    # Window resize event
+    def resize_window(event):
+        engine.config.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+        engine.config.screen_width = event.w
+        engine.config.screen_height = event.h
+    event_handler.add_handler(pygame.VIDEORESIZE, resize_window)
 
-    # x = 0
-    # y = 0
-    # 
-    # def move_right(event):
-    #     nonlocal x
-    #     x += 1
-    # event_handler.add_key_event(pygame.K_d, move_right)
-    # 
-    # def move_down(event):
-    #     nonlocal y
-    #     y += 1
-    # event_handler.add_key_event(pygame.K_s, move_down)
-
+    # Create inventory and inventory navigation functions
     inventory = Inventory()
 
     def select_item_wall(event):
@@ -88,20 +92,64 @@ def main():
     def select_item_eraser(event):
         inventory.select_item(5)
 
+    # Generate garden graph
+    garden_graph, _ = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
+    garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
+
+    # Place a tree in the garden
+    def place_tree(event):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_x = mouse_pos[0]
+        mouse_y = mouse_pos[1]
+        selected_tile_x = floor((mouse_x - garden.position_x)/engine.config.garden_tile_size)
+        selected_tile_y = floor((mouse_y - garden.position_y)/engine.config.garden_tile_size)
+        if selected_tile_x >= 0 and selected_tile_x < garden.size_x and selected_tile_y >= 0 and selected_tile_y < garden.size_y:
+            tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
+            if inventory.selected_item == 0:
+                tile.tile_number = 3
+            elif inventory.selected_item in [1, 2, 3, 4]:
+                tile.tile_number = 2
+            elif inventory.selected_item == 5:
+                tile.tile_number = 0
+
+    # KEY MAPPING
     event_handler.add_key_event(pygame.K_1, select_item_wall)
     event_handler.add_key_event(pygame.K_2, select_item_2)
     event_handler.add_key_event(pygame.K_3, select_item_3)
     event_handler.add_key_event(pygame.K_4, select_item_4)
     event_handler.add_key_event(pygame.K_5, select_item_5)
     event_handler.add_key_event(pygame.K_6, select_item_eraser)
+    event_handler.add_handler(pygame.MOUSEBUTTONDOWN, place_tree)
 
+    sprite_sheet = pygame.image.load(os.path.join("assets", "Tileset.png")).convert()
+    
     while engine.config.running:
         event_handler.pump_events()
 
         engine.config.screen.fill("white")
-        # pygame.draw.rect(engine.config.screen, "black", (x, y, 30, 30),
-        #                  border_radius=10)
+        garden.position_x = floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2)
+        garden.position_y = floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2)
+        garden.draw()
         inventory.draw()
+        
+        # Get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_x = mouse_pos[0]
+        mouse_y = mouse_pos[1]
+        
+        # Draw selection box around tile
+        selected_tile_x = floor((mouse_x - garden.position_x)/engine.config.garden_tile_size)
+        selected_tile_y = floor((mouse_y - garden.position_y)/engine.config.garden_tile_size)
+        
+        for row in garden.garden_tiles:
+            for tile in row:
+                tile.variant = False
+        
+        if selected_tile_x >= 0 and selected_tile_x < garden.size_x and selected_tile_y >= 0 and selected_tile_y < garden.size_y:
+            garden.garden_tiles[selected_tile_y][selected_tile_x].variant = True
+            treetooltip = engine.ui.TreeToolTip(0, 0, 0, 0)
+            treetooltip.draw(engine.config.screen)
+        
         pygame.display.flip()
         engine.config.clock.tick(60)
 
