@@ -9,7 +9,7 @@ class EventHandler:
     def add_handler(self, event_type: int, handler: callable) -> None:
         self.handlers[event_type] = handler
 
-    def add_key_event(self, key: int, handler: callable) -> None:
+    def add_key_handler(self, key: int, handler: callable) -> None:
         self.handlers[pygame.KEYDOWN][key] = handler
 
     def handle_event(self, event):

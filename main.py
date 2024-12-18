@@ -107,7 +107,16 @@ def main():
     garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
 
     # Place a tree in the garden
-    def place_tree(event):
+    placing = False
+    def begin_placing(event):
+        nonlocal placing
+        placing = True
+
+    def end_placing(event):
+        nonlocal placing
+        placing = False
+        
+    def place_tree():
         selected_tile_x, selected_tile_y = get_current_selected_tile(garden)
         if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
             selected_tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
@@ -133,13 +142,14 @@ def main():
                 garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_EMPTY
 
     # KEY MAPPING
-    event_handler.add_key_event(pygame.K_1, select_item_wall)
-    event_handler.add_key_event(pygame.K_2, select_item_2)
-    event_handler.add_key_event(pygame.K_3, select_item_3)
-    event_handler.add_key_event(pygame.K_4, select_item_4)
-    event_handler.add_key_event(pygame.K_5, select_item_5)
-    event_handler.add_key_event(pygame.K_6, select_item_eraser)
-    event_handler.add_handler(pygame.MOUSEBUTTONDOWN, place_tree)
+    event_handler.add_key_handler(pygame.K_1, select_item_wall)
+    event_handler.add_key_handler(pygame.K_2, select_item_2)
+    event_handler.add_key_handler(pygame.K_3, select_item_3)
+    event_handler.add_key_handler(pygame.K_4, select_item_4)
+    event_handler.add_key_handler(pygame.K_5, select_item_5)
+    event_handler.add_key_handler(pygame.K_6, select_item_eraser)
+    event_handler.add_handler(pygame.MOUSEBUTTONDOWN, begin_placing)
+    event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
 
     sprite_sheet = pygame.image.load(os.path.join("assets", "Tileset.png")).convert()
     
@@ -147,6 +157,10 @@ def main():
         event_handler.pump_events()
 
         engine.config.screen.fill("white")
+        
+        if placing:
+            place_tree()
+        
         garden.position_x = floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2)
         garden.position_y = floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2)
         garden.draw()
