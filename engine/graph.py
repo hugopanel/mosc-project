@@ -2,25 +2,27 @@
 
 import networkx as nx
 
+import engine.entities
+
 
 def generate_garden(rows, cols):
-    # Create the graph
-    g = nx.grid_2d_graph(rows, cols)
+    g = nx.grid_2d_graph(rows, cols)  # Nodes are in (row, col) format
 
-    # Map the nodes to numeric labels as per your description
-    mapping = {(i, j): i * cols + j + 1 for i, j in g.nodes}
-    g = nx.relabel_nodes(g, mapping)
-
-    # Adding diagonal edges to the graph
+    # Add diagonal edges to the graph
     for i in range(rows):
         for j in range(cols):
-            current_node = i * cols + j + 1
+            current_node = (i, j)
             # Add diagonal connections
             if i < rows - 1 and j < cols - 1:  # Bottom-right diagonal
-                g.add_edge(current_node, (i + 1) * cols + (j + 1) + 1)
+                g.add_edge(current_node, (i + 1, j + 1))
             if i < rows - 1 and j > 0:  # Bottom-left diagonal
-                g.add_edge(current_node, (i + 1) * cols + (j - 1) + 1)
+                g.add_edge(current_node, (i + 1, j - 1))
 
-    pos = {node: (((node - 1) % cols), -((node - 1) // cols)) for node in g.nodes}
+    for node in g.nodes():
+        g.nodes[node]["type"] = engine.entities.TYPE_EMPTY
+        g.nodes[node]["status"] = engine.entities.STATUS_EMPTY
+        # g.nodes[node]["species"]= {"name": "apple", "code": [2,4,6]}
+        g.nodes[node]["species"] = {}
+        g.nodes[node]["age"] = 0
 
-    return g, pos
+    return g

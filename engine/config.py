@@ -1,5 +1,4 @@
 # COMMON module
-import pygame
 
 screen = None
 clock = None

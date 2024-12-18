@@ -1,13 +1,14 @@
 import os
 from math import floor
 
-import networkx
 import pygame
 import engine.ui
 import engine.graph
 import engine.config
 import engine.events
 import engine.config
+import engine.entities
+from engine.ui import draw_tree_tooltip
 
 
 class Inventory:
@@ -41,6 +42,15 @@ class Inventory:
                                       self.position[1] + round(self.height / 2) - round(text.get_height()) / 2
                                   )
                                   )  # center the text
+
+
+def get_current_selected_tile(garden):
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_x = mouse_pos[0]
+    mouse_y = mouse_pos[1]
+    selected_tile_x = floor((mouse_x - garden.position_x)/engine.config.garden_tile_size)
+    selected_tile_y = floor((mouse_y - garden.position_y)/engine.config.garden_tile_size)
+    return selected_tile_x, selected_tile_y
 
 
 def main():
@@ -93,24 +103,34 @@ def main():
         inventory.select_item(5)
 
     # Generate garden graph
-    garden_graph, _ = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
+    garden_graph = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
     garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
 
     # Place a tree in the garden
     def place_tree(event):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_x = mouse_pos[0]
-        mouse_y = mouse_pos[1]
-        selected_tile_x = floor((mouse_x - garden.position_x)/engine.config.garden_tile_size)
-        selected_tile_y = floor((mouse_y - garden.position_y)/engine.config.garden_tile_size)
-        if selected_tile_x >= 0 and selected_tile_x < garden.size_x and selected_tile_y >= 0 and selected_tile_y < garden.size_y:
-            tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
-            if inventory.selected_item == 0:
-                tile.tile_number = 3
-            elif inventory.selected_item in [1, 2, 3, 4]:
-                tile.tile_number = 2
+        selected_tile_x, selected_tile_y = get_current_selected_tile(garden)
+        if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
+            selected_tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
+            if inventory.selected_item == 0: # Place wall
+                selected_tile.tile_number = 3
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_WALL
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_EMPTY
+            elif inventory.selected_item in [1, 2, 3, 4]: # Place tree
+                selected_tile.tile_number = 2
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_TREE
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_HEALTHY
+                if inventory.selected_item == 1:
+                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[0]
+                elif inventory.selected_item == 2:
+                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[1]
+                elif inventory.selected_item == 3:
+                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[2]
+                elif inventory.selected_item == 4:
+                    garden.graph.nodes[(selected_tile_x, selected_tile_y)]["species"] = engine.entities.known_tree_species[3]
             elif inventory.selected_item == 5:
-                tile.tile_number = 0
+                selected_tile.tile_number = 0
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["type"] = engine.entities.TYPE_EMPTY
+                garden.graph.nodes[(selected_tile_x, selected_tile_y)]["status"] = engine.entities.STATUS_EMPTY
 
     # KEY MAPPING
     event_handler.add_key_event(pygame.K_1, select_item_wall)
@@ -132,23 +152,15 @@ def main():
         garden.draw()
         inventory.draw()
         
-        # Get mouse position
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_x = mouse_pos[0]
-        mouse_y = mouse_pos[1]
-        
-        # Draw selection box around tile
-        selected_tile_x = floor((mouse_x - garden.position_x)/engine.config.garden_tile_size)
-        selected_tile_y = floor((mouse_y - garden.position_y)/engine.config.garden_tile_size)
+        selected_tile_x, selected_tile_y = get_current_selected_tile(garden)
         
         for row in garden.garden_tiles:
             for tile in row:
                 tile.variant = False
         
-        if selected_tile_x >= 0 and selected_tile_x < garden.size_x and selected_tile_y >= 0 and selected_tile_y < garden.size_y:
+        if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
             garden.garden_tiles[selected_tile_y][selected_tile_x].variant = True
-            treetooltip = engine.ui.TreeToolTip(0, 0, 0, 0)
-            treetooltip.draw(engine.config.screen)
+            draw_tree_tooltip(engine.config.screen, (selected_tile_x, selected_tile_y), garden.graph.nodes[(selected_tile_x, selected_tile_y)])
         
         pygame.display.flip()
         engine.config.clock.tick(60)
