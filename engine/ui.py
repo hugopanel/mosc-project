@@ -132,7 +132,7 @@ class Garden:
                 node = graph.nodes[(x, y)]
                 self.garden_tiles[y].append(GardenTile(os.path.join("assets", "Tileset.png"), node["type"], 16))
 
-    def draw(self, position_x = None, position_y = None, width = None, height = None):
+    def draw(self, overlay, position_x = None, position_y = None, width = None, height = None):
         offset_x = position_x if position_x is not None else self.position_x
         offset_y = position_y if position_y is not None else self.position_y
         width = width if width is not None else engine.config.garden_tile_size * self.size_x
@@ -141,6 +141,35 @@ class Garden:
         for y in range(self.size_y):
             for x in range(self.size_x):
                 tile: GardenTile = self.garden_tiles[y][x]
+                node_properties = self.graph.nodes.get((x, y))
                 image = tile.draw()
                 image = pygame.transform.scale(image, (engine.config.garden_tile_size, engine.config.garden_tile_size))
                 engine.config.screen.blit(image, (offset_x + x*(width/self.size_x), offset_y + y*(height/self.size_y)))
+                
+                # Draw overlay
+                if (overlay == 1) & (node_properties["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]):
+                    s = pygame.Surface((engine.config.garden_tile_size, engine.config.garden_tile_size), pygame.SRCALPHA)
+                    node_code = node_properties["code"]
+                    print(node_properties)
+                    print(node_code)
+                    s.fill((
+                        node_code[0]*(255/engine.entities.max_codes),
+                        node_code[1]*(255/engine.entities.max_codes),
+                        node_code[2]*(255/engine.entities.max_codes), 
+                        128))
+                    engine.config.screen.blit(s, (offset_x + x*(width/self.size_x), offset_y + y*(height/self.size_y)))
+                if (overlay == 3) & (node_properties["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]):
+                    s = pygame.Surface((engine.config.garden_tile_size, engine.config.garden_tile_size), pygame.SRCALPHA)
+                    ancestor_node = node_properties["greatest_ancestor"]
+                    if ancestor_node is not None:
+                        ancestor_node_coordinates = ancestor_node["coordinates"]
+                        ancestor_node = self.graph.nodes.get(ancestor_node["coordinates"])
+                    else:
+                        ancestor_node_coordinates = (x, y)
+                        ancestor_node = self.graph.nodes.get((x, y))
+                    s.fill((
+                        ancestor_node_coordinates[0]*(255/engine.config.garden_size["x"]),
+                        ancestor_node_coordinates[1]*(255/engine.config.garden_size["y"]),
+                        sum(ancestor_node["code"])*(255/(engine.entities.max_codes*3)),
+                        128))
+                    engine.config.screen.blit(s, (offset_x + x*(width/self.size_x), offset_y + y*(height/self.size_y)))

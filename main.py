@@ -106,6 +106,26 @@ def main():
     def select_item_eraser(event):
         inventory.select_item(5)
 
+    # Overlay
+    # 0: No overlay
+    # 1: Mutation overlay
+    # 2: Sicknesses overlay
+    # 3: Origin group overlay
+    current_overlay = 0
+    
+    def select_no_overlay(event):
+        nonlocal current_overlay
+        current_overlay = 0
+    def select_overlay_1(event):
+        nonlocal current_overlay
+        current_overlay = 1
+    def select_overlay_2(event):
+        nonlocal current_overlay
+        current_overlay = 2
+    def select_overlay_3(event):
+        nonlocal current_overlay
+        current_overlay = 3
+
     # Generate garden graph
     garden_graph = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
     garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
@@ -161,13 +181,21 @@ def main():
         simulation_running = not simulation_running
     
     # KEY MAPPING
+    # Inventory
     event_handler.add_key_handler(pygame.K_1, select_item_wall)
     event_handler.add_key_handler(pygame.K_2, select_item_2)
     event_handler.add_key_handler(pygame.K_3, select_item_3)
     event_handler.add_key_handler(pygame.K_4, select_item_4)
     event_handler.add_key_handler(pygame.K_5, select_item_5)
     event_handler.add_key_handler(pygame.K_6, select_item_eraser)
+    # Overlay
+    event_handler.add_key_handler(pygame.K_q, select_no_overlay)
+    event_handler.add_key_handler(pygame.K_w, select_overlay_1)
+    event_handler.add_key_handler(pygame.K_e, select_overlay_2)
+    event_handler.add_key_handler(pygame.K_r, select_overlay_3)
+    # Simulation
     event_handler.add_key_handler(pygame.K_p, toggle_simulation_running)
+    # Placing trees
     event_handler.add_handler(pygame.MOUSEBUTTONDOWN, begin_placing)
     event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
 
@@ -245,7 +273,7 @@ def main():
         garden.position_x = floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2)
         garden.position_y = floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2)
         
-        garden.draw()
+        garden.draw(overlay=current_overlay)
         inventory.draw()
         
         # Show hovered tile as variant
