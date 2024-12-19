@@ -1,7 +1,8 @@
 import os
 from math import floor
-from random import randint
+from random import randint, choice
 
+import networkx
 import pygame
 import engine.ui
 import engine.graph
@@ -9,7 +10,7 @@ import engine.config
 import engine.events
 import engine.config
 import engine.entities
-from engine.config import production_code_increase, default_max_growth
+from engine.config import production_code_increase, default_max_growth, mutation_mutation_increase
 from engine.entities import growth
 from engine.ui import draw_tree_tooltip
 
@@ -159,14 +160,6 @@ def main():
         nonlocal simulation_running
         simulation_running = not simulation_running
     
-    def display_time():
-        height = 30
-        position_x = 0
-        position_y = engine.config.screen_height - height
-        text = engine.config.font_big.render(f"Simulation Running: {simulation_running} | Cycle: {round(cycle_count + (engine.config.cycle_length-time_to_next_cycle)/engine.config.cycle_length, 2)}", True, "white")
-        pygame.draw.rect(engine.config.screen, "black", (position_x, position_y, engine.config.screen_width, height))
-        engine.config.screen.blit(text, (position_x + 10, position_y + round(height / 2) - round(text.get_height()) / 2))
-    
     # KEY MAPPING
     event_handler.add_key_handler(pygame.K_1, select_item_wall)
     event_handler.add_key_handler(pygame.K_2, select_item_2)
@@ -210,13 +203,38 @@ def main():
                             if node["health"] > engine.config.default_max_health: node["health"] = engine.config.default_max_health 
                     
                     # Seeds
-                    if node["type"] in [engine.entities.TYPE_SEED]:
+                    if node["type"] == engine.entities.TYPE_SEED:
                         # Grow seed
-                        if randint(0, 100) >= (engine.config.default_growth_probability*100):
+                        if randint(0, 100) > (engine.config.default_growth_probability*100):
                             node["growth"] += 1 + production_code_increase*(sum(node["code"].count(x) for x in growth))
                             if node["growth"] >= default_max_growth:
                                 node["type"] = engine.entities.TYPE_TREE
                                 garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 2
+
+                    # Trees
+                    if node["type"] == engine.entities.TYPE_TREE:
+                        # Propagate seed
+                        if randint(0, 100) > (engine.config.default_seed_propagation_probability * 100):
+                            # Choose a random node among the empty ones, if any
+                            empty_neighbors = [n for n in networkx.neighbors(garden.graph, node_name) if garden.graph.nodes[n]["type"] == engine.entities.TYPE_EMPTY]
+                            if len(empty_neighbors) > 0:
+                                chosen_node_name = choice(empty_neighbors)
+                                chosen_node = garden.graph.nodes[chosen_node_name]
+                                
+                                # Update node for logic
+                                chosen_node["type"] = engine.entities.TYPE_SEED
+                                chosen_node["health"] = engine.config.default_seed_starting_health # TODO: Remove if unnecessary
+                                chosen_node["code"] = node["code"].copy()
+                                
+                                # Try to mutate seed
+                                if randint(0, 100) > (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation)))*100:
+                                    # Choose a random code to mutate
+                                    i = randint(0, len(chosen_node["code"]) - 1)
+                                    chosen_node["code"][i] = randint(0, engine.entities.max_codes)
+                                
+                                # Update tile for drawing
+                                chosen_tile = garden.garden_tiles[chosen_node_name[1]][chosen_node_name[0]]
+                                chosen_tile.tile_number = 1
 
         # DRAWING
         engine.config.screen.fill("white")
@@ -240,7 +258,7 @@ def main():
             draw_tree_tooltip(engine.config.screen, (selected_tile_x, selected_tile_y), garden.graph.nodes[(selected_tile_x, selected_tile_y)])
         
         # Display time
-        display_time()
+        engine.ui.display_time(simulation_running, cycle_count, time_to_next_cycle)
         
         pygame.display.flip() # Flip buffer
         engine.config.clock.tick(60)

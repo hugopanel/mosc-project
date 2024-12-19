@@ -16,6 +16,7 @@ growth = [x for x in range(3, 6)]
 mutation = [x for x in range(6, 9)]
 protection = [x for x in range(9, 12)]
 health = [x for x in range(12, 15)]
+max_codes = 15
 
 known_tree_species = [
     {"name": "Apple", "code": [0, 0, 0]},

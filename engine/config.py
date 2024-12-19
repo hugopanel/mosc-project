@@ -31,3 +31,4 @@ default_production = 1 # Default production per cycle
 
 # DNA code influence
 production_code_increase = 2 # Each production code in the DNA code increases by...
+mutation_mutation_increase = 0.1 

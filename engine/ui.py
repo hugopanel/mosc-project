@@ -9,6 +9,18 @@ import engine.config
 import engine.entities
 
 
+time_display_height = 30
+
+
+def display_time(simulation_running, cycle_count, time_to_next_cycle):
+    height = time_display_height
+    position_x = 0
+    position_y = engine.config.screen_height - height
+    text = engine.config.font_big.render(f"Simulation Running: {simulation_running} | Cycle: {round(cycle_count + (engine.config.cycle_length-time_to_next_cycle)/engine.config.cycle_length, 2)}", True, "white")
+    pygame.draw.rect(engine.config.screen, "black", (position_x, position_y, engine.config.screen_width, height))
+    engine.config.screen.blit(text, (position_x + 10, position_y + round(height / 2) - round(text.get_height()) / 2))
+    
+
 class UIComponent:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -46,7 +58,7 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
     if node_properties['type'] == engine.entities.TYPE_EMPTY:
         return
     if node_properties['type'] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
-        type_name = engine.entities.get_species_name(node_properties['code']) + " {type} [{code}]".format(type="Seed" if node_properties["type"] == engine.entities.TYPE_SEED else "Tree", code="".join(str(c) for c in node_properties['code'])) 
+        type_name = engine.entities.get_species_name(node_properties['code']) + " {type} [{code}]".format(type="Seed" if node_properties["type"] == engine.entities.TYPE_SEED else "Tree", code=" ".join(str(c) for c in node_properties['code'])) 
     else:
         type_name = "Wall"
     
@@ -75,8 +87,8 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
     # Check if tooltip will render outside the window
     if position[0] + box_width > engine.config.screen_width:
         position = pygame.mouse.get_pos()[0] - 10 - box_width, position[1]
-    if position[1] + box_height > engine.config.screen_height - 10:
-        position = position[0], engine.config.screen_height - box_height - 10
+    if position[1] + box_height > engine.config.screen_height - 10 - time_display_height:
+        position = position[0], engine.config.screen_height - box_height - 10 - time_display_height
     
     screen.blit(tooltip_box, position)
     for i in range(len(rows)):
