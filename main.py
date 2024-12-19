@@ -274,12 +274,16 @@ def main():
                         if len(node["sicknesses"]) > 0:
                             for sickness in node["sicknesses"]:
                                 # Decrease health
-                                node["health"] -= engine.config.default_sickness_health_penalty + engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in sickness)
+                                node["health"] -= (
+                                        engine.config.default_sickness_health_penalty # Base penalty for every sickness
+                                        + engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in sickness) # Increase the penalty if the sickness' code matches with that of the seed/tree 
+                                        - engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in engine.entities.protection_codes)) # Cancel penalties for each protection code in the seed/tree DNA code
                         
                         # Regenerate health
-                        if node["health"] < engine.config.default_max_health:
+                        max_health = engine.config.default_max_health + engine.config.health_code_increase * sum(node["code"].count(x) for x in engine.entities.health_codes)
+                        if node["health"] < max_health:
                             node["health"] = round(node["health"] * engine.config.default_health_regeneration_multiplier, 1) 
-                            if node["health"] > engine.config.default_max_health: node["health"] = engine.config.default_max_health
+                            if node["health"] > max_health: node["health"] = max_health
                         
                         # Remove node if health <= 0
                         if node["health"] <= 0:
