@@ -246,14 +246,16 @@ def main():
                                     # TODO: Add immunity
 
                         # Become sick from a random sickness
-                        if node["type"] == engine.entities.TYPE_WALL:
-                            probability = engine.config.default_random_sickness_appearance_probability * engine.config.wall_sickness_multiplier * 1000
-                        else:
-                            probability = engine.config.default_random_sickness_appearance_probability*1000
-                        if randint(1, 1000) <= probability:
-                            new_sickness = [randint(0, engine.entities.max_codes) for _ in range(engine.config.sickness_number_of_codes)]
-                            new_sickness.sort()
-                            node["sicknesses"].append(new_sickness)
+                        if len(node["sicknesses"]) < engine.config.default_max_sicknesses:
+                            if node["type"] == engine.entities.TYPE_WALL:
+                                probability = engine.config.default_random_sickness_appearance_probability * engine.config.wall_sickness_multiplier * 1000
+                            else:
+                                probability = engine.config.default_random_sickness_appearance_probability*1000
+                            if randint(1, 1000) <= probability:
+                                new_sickness = [randint(0, engine.entities.max_codes) for _ in range(engine.config.sickness_number_of_codes)]
+                                new_sickness.sort()
+                                if new_sickness not in node["sicknesses"]:
+                                    node["sicknesses"].append(new_sickness)
                         
                         # Spread a sickness to a neighbor
                         if len(node["sicknesses"]) > 0:
@@ -264,7 +266,7 @@ def main():
                             if randint(1, 100) <= probability:
                                 sickness_to_spread = choice(node["sicknesses"])
                                 neighbor = choice([node for node in networkx.neighbors(garden.graph, node_name)])
-                                if garden.graph.nodes.get(neighbor)["type"] != engine.entities.TYPE_EMPTY:
+                                if (garden.graph.nodes.get(neighbor)["type"] != engine.entities.TYPE_EMPTY) & (len(garden.graph.nodes.get(neighbor)["sicknesses"]) < engine.config.default_max_sicknesses):
                                     if not sickness_to_spread in garden.graph.nodes.get(neighbor)["sicknesses"]:
                                         garden.graph.nodes.get(neighbor)["sicknesses"].append(sickness_to_spread)
                     
@@ -326,7 +328,7 @@ def main():
                                 if randint(1, 100) <= (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation_codes)))*100:
                                     # Choose a random code to mutate
                                     i = randint(0, len(chosen_node["code"]) - 1)
-                                    chosen_node["code"][i] = randint(0, engine.entities.max_codes)
+                                    chosen_node["code"][i] = randint(0, engine.entities.max_codes - 1)
                                     chosen_node["code"].sort()
                                 
                                 # Update tile for drawing
