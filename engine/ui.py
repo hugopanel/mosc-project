@@ -71,6 +71,7 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
     rows.append(engine.config.font_heading.render("{coordinates} {type_name}".format(coordinates=node_coordinates, type_name=type_name), True, "white"))
     rows.append(engine.config.font_small.render("Status: {status}".format(status=status), True, "gray"))
     if node_properties['type'] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+        rows.append(engine.config.font_small.render(f"Greatest ancestor: {node_properties["greatest_ancestor"]["name"]} {node_properties["greatest_ancestor"]["coordinates"]}" if node_properties["greatest_ancestor"] is not None else "Original Tree", True, "gray"))
         if node_properties["growth"] >= engine.config.default_max_growth:
             rows.append(engine.config.font_small.render("Age: {age}".format(age=node_properties["age"]), True, "gray"))
         else:

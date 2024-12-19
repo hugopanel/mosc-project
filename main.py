@@ -11,7 +11,7 @@ import engine.events
 import engine.config
 import engine.entities
 from engine.config import production_code_increase, default_max_growth, mutation_mutation_increase
-from engine.entities import growth
+from engine.entities import growth_codes
 from engine.ui import draw_tree_tooltip
 
 
@@ -205,8 +205,8 @@ def main():
                     # Seeds
                     if node["type"] == engine.entities.TYPE_SEED:
                         # Grow seed
-                        if randint(0, 100) > (engine.config.default_growth_probability*100):
-                            node["growth"] += 1 + production_code_increase*(sum(node["code"].count(x) for x in growth))
+                        if randint(0, 100) <= (engine.config.default_growth_probability*100):
+                            node["growth"] += 1 + production_code_increase*(sum(node["code"].count(x) for x in growth_codes))
                             if node["growth"] >= default_max_growth:
                                 node["type"] = engine.entities.TYPE_TREE
                                 garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 2
@@ -214,7 +214,7 @@ def main():
                     # Trees
                     if node["type"] == engine.entities.TYPE_TREE:
                         # Propagate seed
-                        if randint(0, 100) > (engine.config.default_seed_propagation_probability * 100):
+                        if randint(0, 100) <= (engine.config.default_seed_propagation_probability * 100):
                             # Choose a random node among the empty ones, if any
                             empty_neighbors = [n for n in networkx.neighbors(garden.graph, node_name) if garden.graph.nodes[n]["type"] == engine.entities.TYPE_EMPTY]
                             if len(empty_neighbors) > 0:
@@ -225,9 +225,11 @@ def main():
                                 chosen_node["type"] = engine.entities.TYPE_SEED
                                 chosen_node["health"] = engine.config.default_seed_starting_health # TODO: Remove if unnecessary
                                 chosen_node["code"] = node["code"].copy()
+                                chosen_node["greatest_ancestor"] = node["greatest_ancestor"] if node["greatest_ancestor"] is not None else {
+                                    "name": f"{engine.entities.get_species_name(node["code"])} Tree", "coordinates": node_name}
                                 
                                 # Try to mutate seed
-                                if randint(0, 100) > (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation)))*100:
+                                if randint(0, 100) <= (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation_codes)))*100:
                                     # Choose a random code to mutate
                                     i = randint(0, len(chosen_node["code"]) - 1)
                                     chosen_node["code"][i] = randint(0, engine.entities.max_codes)

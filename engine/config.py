@@ -26,7 +26,7 @@ default_seed_starting_health = 5 # Seeds start low and gain health slowly using 
 default_health_regeneration_multiplier = 1.25 # When health is below the max, it regenerates at d_h_r_m*health per cycle
 default_sickness_propagation_probability = 0.2 # Probability to propagate a sickness each cycle
 default_seed_propagation_probability = 0.5 # Probability to produce a seed
-default_mutation_probability = 0.3 # Probability to produce a mutated seed
+default_mutation_probability = 0.1 # Probability to produce a mutated seed
 default_production = 1 # Default production per cycle
 
 # DNA code influence

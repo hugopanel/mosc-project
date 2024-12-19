@@ -11,32 +11,38 @@ STATUS_HEALTHY = 1
 STATUS_SICK = 2
 
 # Code values
-production = [x for x in range(0, 3)]
-growth = [x for x in range(3, 6)]
-mutation = [x for x in range(6, 9)]
-protection = [x for x in range(9, 12)]
-health = [x for x in range(12, 15)]
+production_codes = [x for x in range(0, 3)]
+growth_codes = [x for x in range(3, 6)]
+mutation_codes = [x for x in range(6, 9)]
+protection_codes = [x for x in range(9, 12)]
+health_codes = [x for x in range(12, 15)]
 max_codes = 15
 
+production = production_codes[0]
+growth = growth_codes[0]
+mutation = mutation_codes[0]
+protection = protection_codes[0]
+health = health_codes[0]
+
 known_tree_species = [
-    {"name": "Apple", "code": [0, 0, 0]},
-    {"name": "Orange", "code": [3, 3, 3]},
-    {"name": "Peach", "code": [6, 6, 6]},
-    {"name": "Pear", "code": [9, 9, 9]},
-    {"name": "Cherry", "code": [12, 12, 12]},
-    {"name": "Lemon", "code": [0, 0, 3]},
-    {"name": "Lime", "code": [0, 3, 3]},
-    {"name": "Grapefruit", "code": [0, 3, 9]},
-    {"name": "Banana", "code": [0, 3, 12]},
-    {"name": "Pineapple", "code": [3, 9, 12]},
-    {"name": "Coconut", "code": [0, 9, 9]},
-    {"name": "Mango", "code": [0, 3, 6]},
-    {"name": "Papaya", "code": [3, 3, 6]},
-    {"name": "Guava", "code": [6, 6, 12]},
-    {"name": "Kiwi", "code": [0, 6, 6]},
-    {"name": "Avocado", "code": [6, 9, 12]},
-    {"name": "Fig", "code": [9, 12, 12]},
-    {"name": "Olive", "code": [6, 12, 12]}
+    {"name": "Apple", "code": [production, production, production]},
+    {"name": "Orange", "code": [growth, growth, growth]},
+    {"name": "Peach", "code": [mutation, mutation, mutation]},
+    {"name": "Pear", "code": [protection, protection, protection]},
+    {"name": "Cherry", "code": [health, health, health]},
+    {"name": "Lemon", "code": [production, production, growth]},
+    {"name": "Lime", "code": [production, growth, growth]},
+    {"name": "Grapefruit", "code": [production, growth, protection]},
+    {"name": "Banana", "code": [production, growth, health]},
+    {"name": "Pineapple", "code": [growth, protection, health]},
+    {"name": "Coconut", "code": [production, protection, protection]},
+    {"name": "Mango", "code": [production, growth, mutation]},
+    {"name": "Papaya", "code": [growth, growth, mutation]},
+    {"name": "Guava", "code": [mutation, mutation, health]},
+    {"name": "Kiwi", "code": [production, mutation, mutation]},
+    {"name": "Avocado", "code": [mutation, protection, health]},
+    {"name": "Fig", "code": [protection, health, health]},
+    {"name": "Olive", "code": [mutation, health, health]}
 ]
 
 def get_species_name(species_code):

@@ -26,5 +26,6 @@ def generate_garden(rows, cols):
         g.nodes[node]["code"] = []
         g.nodes[node]["growth"] = 0
         g.nodes[node]["health"] = engine.config.default_seed_starting_health
+        g.nodes[node]["greatest_ancestor"] = None
 
     return g
