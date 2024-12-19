@@ -1,6 +1,7 @@
 # GUI Module
 import os
 from abc import abstractmethod, ABC
+from math import floor
 
 import pygame
 from networkx.classes import Graph
@@ -12,13 +13,14 @@ import engine.entities
 time_display_height = 30
 
 
-def display_time(simulation_running, cycle_count, time_to_next_cycle):
+def display_status_bar(simulation_running, cycle_count, time_to_next_cycle, production_per_cycle, total_production):
     height = time_display_height
-    position_x = 0
     position_y = engine.config.screen_height - height
-    text = engine.config.font_big.render(f"Simulation Running: {simulation_running} | Cycle: {round(cycle_count + (engine.config.cycle_length-time_to_next_cycle)/engine.config.cycle_length, 2)}", True, "white")
-    pygame.draw.rect(engine.config.screen, "black", (position_x, position_y, engine.config.screen_width, height))
-    engine.config.screen.blit(text, (position_x + 10, position_y + round(height / 2) - round(text.get_height()) / 2))
+    left_text = engine.config.font_big.render(f"Simulation Running: {simulation_running} | Cycle: {round(cycle_count + (engine.config.cycle_length-time_to_next_cycle)/engine.config.cycle_length, 2)}", True, "white")
+    right_text = engine.config.font_big.render(f"Current production per cycle: {production_per_cycle} Total production: {total_production}", True, "white")
+    pygame.draw.rect(engine.config.screen, "black", (0, position_y, engine.config.screen_width, height))
+    engine.config.screen.blit(left_text, (10, position_y + round(height / 2) - round(left_text.get_height()) / 2))
+    engine.config.screen.blit(right_text, (engine.config.screen_width - right_text.get_width() - 10, position_y + round(height / 2) - round(left_text.get_height()) / 2))
     
 
 class UIComponent:
@@ -77,7 +79,8 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
         else:
             rows.append(engine.config.font_small.render("Age: {age}, Growth: {growth}".format(age=node_properties["age"], growth=node_properties["growth"]), True, "gray"))
         rows.append(engine.config.font_small.render(f"Health: {round(node_properties["health"], 1)}", True, "gray"))
-        rows.append(engine.config.font_small.render("Production: +5/cycle", True, "gray"))
+    if node_properties["type"] == engine.entities.TYPE_TREE:
+        rows.append(engine.config.font_small.render(f"Production: +{engine.config.default_production + engine.config.production_code_increase*(sum(node_properties["code"].count(x) for x in engine.entities.production_codes))}/cycle", True, "gray"))
 
     box_width = 10 + max(row.get_width() for row in rows)
     box_height = 10 + rows[0].get_height() + 5 + sum((5 + row.get_height()) for row in rows[1:])
@@ -150,14 +153,24 @@ class Garden:
                 if (overlay == 1) & (node_properties["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]):
                     s = pygame.Surface((engine.config.garden_tile_size, engine.config.garden_tile_size), pygame.SRCALPHA)
                     node_code = node_properties["code"]
-                    print(node_properties)
-                    print(node_code)
                     s.fill((
                         node_code[0]*(255/engine.entities.max_codes),
                         node_code[1]*(255/engine.entities.max_codes),
                         node_code[2]*(255/engine.entities.max_codes), 
                         128))
                     engine.config.screen.blit(s, (offset_x + x*(width/self.size_x), offset_y + y*(height/self.size_y)))
+                if (overlay == 2) & (node_properties["type"] in [engine.entities.TYPE_WALL, engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]):
+                    sicknesses = node_properties["sicknesses"]
+                    number_of_sicknesses = len(sicknesses)
+                    for i in range(number_of_sicknesses):
+                        sickness = sicknesses[i]
+                        s = pygame.Surface((floor(engine.config.garden_tile_size/number_of_sicknesses), engine.config.garden_tile_size), pygame.SRCALPHA)
+                        s.fill((
+                            sickness[0]*(255/engine.entities.max_codes),
+                            sickness[1]*(255/engine.entities.max_codes),
+                            sickness[2]*(255/engine.entities.max_codes),
+                        128))
+                        engine.config.screen.blit(s, (offset_x + x*(width/self.size_x) + (i*floor(engine.config.garden_tile_size/number_of_sicknesses)), offset_y + y*(height/self.size_y)))
                 if (overlay == 3) & (node_properties["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]):
                     s = pygame.Surface((engine.config.garden_tile_size, engine.config.garden_tile_size), pygame.SRCALPHA)
                     ancestor_node = node_properties["greatest_ancestor"]
