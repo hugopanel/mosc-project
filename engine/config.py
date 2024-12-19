@@ -38,6 +38,8 @@ default_mutation_probability = 0.1 # Probability to produce a mutated seed
 default_production = 2 # Default production per cycle
 wall_sickness_multiplier = 0.2 # By what to multiply the probability of being sick / spreading a sickness for walls. Healing for walls is the inverse or this (1-value)
 
+default_max_sicknesses = 5 # Maximum number of sicknesses per wall/seed/tree at the same time.
+
 # DNA code
 sickness_number_of_codes = 3 # Length of the sickness' DNA code 
 production_code_increase = 2 # Each production code in the DNA code increases production by...
