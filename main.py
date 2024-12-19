@@ -128,8 +128,24 @@ def main():
         current_overlay = 3
 
     # Generate garden graph
-    garden_graph = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
-    garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
+    garden_graph = None
+    garden = None
+    
+    def generate_garden():
+        nonlocal garden_graph
+        nonlocal garden
+        garden_graph = engine.graph.generate_garden(engine.config.garden_size["x"], engine.config.garden_size["y"])
+        garden = engine.ui.Garden(garden_graph, engine.config.garden_size["x"], engine.config.garden_size["y"], floor((engine.config.screen_width - engine.config.garden_size["x"] * engine.config.garden_tile_size)/2), floor((engine.config.screen_height - engine.config.garden_size["y"] * engine.config.garden_tile_size)/2))
+
+    generate_garden()
+
+    def reset_garden(event):
+        nonlocal garden_graph
+        nonlocal garden
+        del garden_graph
+        del garden
+        generate_garden()
+        
 
     def reset_node_properties(node_properties):
         node_properties["type"] = engine.entities.TYPE_EMPTY
@@ -201,6 +217,7 @@ def main():
     event_handler.add_key_handler(pygame.K_r, select_overlay_3)
     # Simulation
     event_handler.add_key_handler(pygame.K_p, toggle_simulation_running)
+    event_handler.add_key_handler(pygame.K_BACKQUOTE, reset_garden)
     # Placing trees
     event_handler.add_handler(pygame.MOUSEBUTTONDOWN, begin_placing)
     event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
