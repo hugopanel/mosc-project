@@ -225,6 +225,10 @@ def main():
         menu = engine.ui.CreateTreeMenu()
         menu_stack.append(menu)
         menu.open(event_handler, inventory)
+    def open_probability_settings_menu(event):
+        menu = engine.ui.ChangeProbabilitiesMenu()
+        menu_stack.append(menu)
+        menu.open(event_handler)
     
     # KEY MAPPING
     # Inventory
@@ -247,6 +251,7 @@ def main():
     event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
     # UI menus
     event_handler.add_key_handler(pygame.K_SPACE, open_custom_tree_menu) # TODO: Change key
+    event_handler.add_key_handler(pygame.K_TAB, open_probability_settings_menu) # TODO: Change key
 
     total_production = 0
     cycle_production = 0
