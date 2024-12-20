@@ -27,7 +27,7 @@ class Inventory:
             {"type": "Tree", "code": [engine.entities.production, engine.entities.production, engine.entities.production]},
             {"type": "Tree", "code": [engine.entities.growth, engine.entities.growth, engine.entities.growth]},
             {"type": "Tree", "code": [engine.entities.mutation, engine.entities.mutation, engine.entities.mutation]},
-            {"type": "Tree", "code": [engine.entities.protection, engine.entities.protection, engine.entities.protection]},
+            {"type": "Sickness", "code": [engine.entities.protection, engine.entities.protection, engine.entities.protection]},
             {"type": "Wall", "code": []},
             {"type": "Eraser", "code": []}
         ]
@@ -43,8 +43,8 @@ class Inventory:
     def change_preset(self, preset, item=None):
         item = item if item is not None else self.selected_item
         if item < 4:
-            self.presets[item] = preset
-            self.items[item] = f"{item + 1} {preset["code"]}"
+            self.presets[item]["code"] = preset["code"]
+            self.items[item] = preset["code"]
 
     def draw(self):
         if self.selected_item == 4:
@@ -213,11 +213,18 @@ def main():
             selected_tile = garden.garden_tiles[selected_tile_y][selected_tile_x]
             node = garden.graph.nodes[(selected_tile_x, selected_tile_y)]
             
+            # Update node property
+            item = inventory.presets[inventory.selected_item]
+
+            if item["type"] == "Sickness":
+                if len(node["sicknesses"]) < engine.config.default_max_sicknesses:
+                    if item["code"] not in node["sicknesses"]:
+                        node["sicknesses"].append(item["code"])
+                return
+            
             # Reset node
             reset_node_properties(node)
             
-            # Update node property
-            item = inventory.presets[inventory.selected_item]
             if item["type"] == "Wall":
             # if inventory.selected_item == 0: # Place wall
                 selected_tile.tile_number = 3
@@ -225,7 +232,7 @@ def main():
             elif item["type"] == "Eraser":
                 selected_tile.tile_number = 0
                 node["type"] = engine.entities.TYPE_EMPTY
-            else:
+            elif item["type"] == "Tree":
                 selected_tile.tile_number = 1
                 node["type"] = engine.entities.TYPE_SEED
                 node["code"] = item["code"]

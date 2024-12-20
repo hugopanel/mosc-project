@@ -188,7 +188,7 @@ class CreateTreeMenu(UIMenu):
             if self._current_configuration[i] > 0:
                 for j in range(self._current_configuration[i]):
                     code.append(choice(codes[i]))
-        self._inventory.change_preset({"type": "tree", "code": code})
+        self._inventory.change_preset({"type": "Tree", "code": code})
         self.close()
         
     def draw(self):        
