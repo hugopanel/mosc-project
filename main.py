@@ -18,7 +18,7 @@ from engine.ui import draw_tree_tooltip
 
 class Inventory:
     def __init__(self):
-        self.items = ["1 [0, 0, 0]", "2 [3, 3, 3]", "3 [6, 6, 6]", "4 [9, 9, 9]", "W", "E"]
+        self.items = ["[0, 0, 0]", "[3, 3, 3]", "[6, 6, 6]", "[9, 9, 9]", "W", "E"]
         self.selected_item = 0
         self.position = (0, 0)
         self.min_width = 50
@@ -31,7 +31,12 @@ class Inventory:
             {"type": "Wall", "code": []},
             {"type": "Eraser", "code": []}
         ]
-
+        self.sprite_sheet = pygame.image.load(os.path.join("assets", "inventory_tileset.png")).convert()
+        self.sprite_sheet_size_x = 3
+        self.sprite_sheet_size_y = 2
+        self.sprite_size_x = 16
+        self.sprite_size_y = 16
+        
     def select_item(self, item_number):
         self.selected_item = item_number % len(self.items)
     
@@ -55,13 +60,25 @@ class Inventory:
         font = pygame.font.SysFont("default", 50, False, False)
         text = font.render(str(self.items[self.selected_item]), True, fg_color)
         width = max(self.min_width, (text.get_width() + 20))
+
+        if self.selected_item < 4:
+            width += 50
+            
         pygame.draw.rect(engine.config.screen, bg_color, (self.position[0], self.position[1], width, self.height))
+        
         engine.config.screen.blit(text,
                                   (
-                                      self.position[0] + round(width / 2) - round(text.get_width() / 2),
+                                      self.position[0] + round(width / 2) - round(text.get_width() / 2) + 20 if self.selected_item < 4 else 0,
                                       self.position[1] + round(self.height / 2) - round(text.get_height()) / 2
                                   )
                                   )  # center the text
+        
+        rect = pygame.Rect(self.sprite_size_x * (self.selected_item % (self.sprite_sheet_size_x)), self.sprite_size_y * round(self.selected_item / (self.sprite_sheet_size_x + 1)), self.sprite_size_x, self.sprite_size_y)
+        image = pygame.Surface(rect.size).convert()
+        image.blit(self.sprite_sheet, (0, 0), rect)
+        image.set_colorkey(pygame.Color(0, 0, 0, 0), pygame.RLEACCEL)
+        image = pygame.transform.scale(image, (50, 50))
+        engine.config.screen.blit(image, (0, 0))
 
 
 def get_current_selected_tile(garden):
@@ -209,21 +226,9 @@ def main():
                 selected_tile.tile_number = 0
                 node["type"] = engine.entities.TYPE_EMPTY
             else:
-            # elif inventory.selected_item in [1, 2, 3, 4]: # Place seed
                 selected_tile.tile_number = 1
                 node["type"] = engine.entities.TYPE_SEED
                 node["code"] = item["code"]
-            #     if inventory.selected_item == 1:
-            #         node["code"] = engine.entities.known_tree_species[0]["code"]
-            #     elif inventory.selected_item == 2:
-            #         node["code"] = engine.entities.known_tree_species[1]["code"]
-            #     elif inventory.selected_item == 3:
-            #         node["code"] = engine.entities.known_tree_species[2]["code"]
-            #     elif inventory.selected_item == 4:
-            #         node["code"] = engine.entities.known_tree_species[3]["code"]
-            # elif inventory.selected_item == 5:
-            #     selected_tile.tile_number = 0
-            #     node["type"] = engine.entities.TYPE_EMPTY
 
     simulation_running = False
     cycle_count = 0
