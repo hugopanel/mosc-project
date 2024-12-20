@@ -151,11 +151,20 @@ def main():
     generate_garden()
 
     def reset_garden(event):
+        # Reset garden
         nonlocal garden_graph
         nonlocal garden
         del garden_graph
         del garden
         generate_garden()
+        
+        # Reset properties
+        nonlocal cycle_count
+        nonlocal cycle_production
+        nonlocal total_production
+        cycle_count = 0
+        cycle_production = 0
+        total_production = 0
         
 
     def reset_node_properties(node_properties):
