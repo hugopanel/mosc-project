@@ -14,8 +14,8 @@ font_small = None
 cycle_length = 10 # Duration of a cycle in ticks
 
 # Garden
-garden_size = {"x": 30, "y": 30} # Size of the garden in number of tiles
-garden_tile_size = 20 # Width and height of a tile in pixels
+garden_size = {"x": 7, "y": 7} # Size of the garden in number of tiles
+garden_tile_size = 50 # Width and height of a tile in pixels
 
 # garden_size = {"x": 11, "y": 11} # Size of the garden in number of tiles
 # garden_tile_size = 50 # Width and height of a tile in pixels
@@ -26,7 +26,7 @@ default_growth_probability = 0.8 # Probability to grow per cycle
 default_max_growth = 5 # Growth until mature
 default_max_health = 500 # Maximum value for the health of a seed/tree
 default_seed_starting_health = 5 # Seeds start low and gain health slowly using the health regen. mult.
-default_health_regeneration_multiplier = 1.25 # When health is below the max, it regenerates at d_h_r_m*health per cycle
+default_health_regeneration_multiplier = 6 # When health is below the max, it regenerates at d_h_r_m*health per cycle
 default_sickness_health_penalty = 1 # Each cycle, a sickness deals X damage to an infected node, no matter the DNA code
 default_sickness_propagation_probability = 0.9 # Probability to propagate a sickness each cycle
 default_sickness_heal_probability = 0.7 # Probability for each node to heal from a sickness

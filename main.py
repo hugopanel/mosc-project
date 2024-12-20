@@ -359,7 +359,7 @@ def main():
                             # Regenerate health
                             max_health = engine.config.default_max_health + engine.config.health_code_increase * sum(node["code"].count(x) for x in engine.entities.health_codes)
                             if node["health"] < max_health:
-                                node["health"] = round(node["health"] * engine.config.default_health_regeneration_multiplier, 1) 
+                                node["health"] += engine.config.default_health_regeneration_multiplier 
                                 if node["health"] > max_health: node["health"] = max_health
                             
                             # Remove node if health <= 0

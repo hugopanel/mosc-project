@@ -228,7 +228,7 @@ class ChangeProbabilitiesMenu(UIMenu):
             [1, engine.config.default_max_growth, 1, 1000],
             [50, engine.config.default_max_health, 1, 1000],
             [1, engine.config.default_seed_starting_health, 0, 1000],
-            [0.05, engine.config.default_health_regeneration_multiplier, 0, 1],
+            [0.5, engine.config.default_health_regeneration_multiplier, 1, 1000],
             [0.5, engine.config.default_sickness_health_penalty, 0, 1000],
             [0.1, engine.config.default_sickness_propagation_probability, 0, 1],
             [0.1, engine.config.default_sickness_heal_probability, 0, 1],
