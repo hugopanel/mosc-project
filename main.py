@@ -18,17 +18,28 @@ from engine.ui import draw_tree_tooltip
 
 class Inventory:
     def __init__(self):
-        self.items = ["M", "A", "B", "C", "D", "G"]
+        self.items = ["1", "2", "3", "4", "W", "E"]
         self.selected_item = 0
         self.position = (0, 0)
         self.width = 50
         self.height = 50
+        self.presets = [
+            {"type": "Tree", "code": [engine.entities.production, engine.entities.production, engine.entities.production]},
+            {"type": "Tree", "code": [engine.entities.growth, engine.entities.growth, engine.entities.growth]},
+            {"type": "Tree", "code": [engine.entities.mutation, engine.entities.mutation, engine.entities.mutation]},
+            {"type": "Tree", "code": [engine.entities.protection, engine.entities.protection, engine.entities.protection]},
+            {"type": "Wall", "code": []},
+            {"type": "Eraser", "code": []}
+        ]
 
     def select_item(self, item_number):
         self.selected_item = item_number % len(self.items)
+    
+    def change_preset(self, preset, item=None):
+        self.presets[item if item is not None else self.selected_item] = preset
 
     def draw(self):
-        if self.selected_item == 0:
+        if self.selected_item == 4:
             fg_color = "white"
             bg_color = "black"
         elif self.selected_item == 5:
@@ -176,23 +187,30 @@ def main():
             reset_node_properties(node)
             
             # Update node property
-            if inventory.selected_item == 0: # Place wall
+            item = inventory.presets[inventory.selected_item]
+            if item["type"] == "Wall":
+            # if inventory.selected_item == 0: # Place wall
                 selected_tile.tile_number = 3
                 node["type"] = engine.entities.TYPE_WALL
-            elif inventory.selected_item in [1, 2, 3, 4]: # Place seed
-                selected_tile.tile_number = 1
-                node["type"] = engine.entities.TYPE_SEED
-                if inventory.selected_item == 1:
-                    node["code"] = engine.entities.known_tree_species[0]["code"]
-                elif inventory.selected_item == 2:
-                    node["code"] = engine.entities.known_tree_species[1]["code"]
-                elif inventory.selected_item == 3:
-                    node["code"] = engine.entities.known_tree_species[2]["code"]
-                elif inventory.selected_item == 4:
-                    node["code"] = engine.entities.known_tree_species[3]["code"]
-            elif inventory.selected_item == 5:
+            elif item["type"] == "Eraser":
                 selected_tile.tile_number = 0
                 node["type"] = engine.entities.TYPE_EMPTY
+            else:
+            # elif inventory.selected_item in [1, 2, 3, 4]: # Place seed
+                selected_tile.tile_number = 1
+                node["type"] = engine.entities.TYPE_SEED
+                node["code"] = item["code"]
+            #     if inventory.selected_item == 1:
+            #         node["code"] = engine.entities.known_tree_species[0]["code"]
+            #     elif inventory.selected_item == 2:
+            #         node["code"] = engine.entities.known_tree_species[1]["code"]
+            #     elif inventory.selected_item == 3:
+            #         node["code"] = engine.entities.known_tree_species[2]["code"]
+            #     elif inventory.selected_item == 4:
+            #         node["code"] = engine.entities.known_tree_species[3]["code"]
+            # elif inventory.selected_item == 5:
+            #     selected_tile.tile_number = 0
+            #     node["type"] = engine.entities.TYPE_EMPTY
 
     simulation_running = False
     cycle_count = 0
@@ -201,6 +219,12 @@ def main():
     def toggle_simulation_running(event):
         nonlocal simulation_running
         simulation_running = not simulation_running
+
+    menu_stack = []
+    def open_custom_tree_menu(event):
+        menu = engine.ui.CreateTreeMenu()
+        menu_stack.append(menu)
+        menu.open(event_handler, inventory)
     
     # KEY MAPPING
     # Inventory
@@ -221,6 +245,8 @@ def main():
     # Placing trees
     event_handler.add_handler(pygame.MOUSEBUTTONDOWN, begin_placing)
     event_handler.add_handler(pygame.MOUSEBUTTONUP, end_placing)
+    # UI menus
+    event_handler.add_key_handler(pygame.K_SPACE, open_custom_tree_menu) # TODO: Change key
 
     total_production = 0
     cycle_production = 0
@@ -228,129 +254,130 @@ def main():
     while engine.config.running:
         event_handler.pump_events()
 
-        # LOGIC
-        # Allow player to place tiles
-        if placing:
-            place_tree()
-                
-        # Handle time    
-        if simulation_running:
-            time_to_next_cycle -= 1
-            if time_to_next_cycle <= 0:
-                # Update time
-                time_to_next_cycle = engine.config.cycle_length
-                cycle_count += 1
-                cycle_production = 0
-                
-                # Update nodes
-                for node_name in garden.graph.nodes:
-                    node = garden.graph.nodes[node_name]
+        if len(menu_stack) == 0:
+            # LOGIC
+            # Allow player to place tiles
+            if placing:
+                place_tree()
                     
-                    # Increase node age
-                    node["age"] += 1
+            # Handle time    
+            if simulation_running:
+                time_to_next_cycle -= 1
+                if time_to_next_cycle <= 0:
+                    # Update time
+                    time_to_next_cycle = engine.config.cycle_length
+                    cycle_count += 1
+                    cycle_production = 0
                     
-                    # Walls, seeds and trees
-                    if node["type"] in [engine.entities.TYPE_WALL, engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
-                        # Heal from a sickness
-                        if len(node["sicknesses"]) > 0:
-                            for sickness in node["sicknesses"]:
+                    # Update nodes
+                    for node_name in garden.graph.nodes:
+                        node = garden.graph.nodes[node_name]
+                        
+                        # Increase node age
+                        node["age"] += 1
+                        
+                        # Walls, seeds and trees
+                        if node["type"] in [engine.entities.TYPE_WALL, engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+                            # Heal from a sickness
+                            if len(node["sicknesses"]) > 0:
+                                for sickness in node["sicknesses"]:
+                                    if node["type"] == engine.entities.TYPE_WALL:
+                                        probability = (engine.config.default_sickness_heal_probability * (1 + 1 - engine.config.wall_sickness_multiplier))*100
+                                    else:
+                                        probability = (engine.config.default_sickness_heal_probability - matching_code_impact_sickness_heal*sum(node["code"].count(x) for x in sickness))*100
+                                    if randint(1, 100) <= probability:
+                                        node["sicknesses"].remove(sickness)
+                                        # TODO: Add immunity
+    
+                            # Become sick from a random sickness
+                            if len(node["sicknesses"]) < engine.config.default_max_sicknesses:
                                 if node["type"] == engine.entities.TYPE_WALL:
-                                    probability = (engine.config.default_sickness_heal_probability * (1 + 1 - engine.config.wall_sickness_multiplier))*100
+                                    probability = engine.config.default_random_sickness_appearance_probability * engine.config.wall_sickness_multiplier * 1000
                                 else:
-                                    probability = (engine.config.default_sickness_heal_probability - matching_code_impact_sickness_heal*sum(node["code"].count(x) for x in sickness))*100
+                                    probability = engine.config.default_random_sickness_appearance_probability*1000
+                                if randint(1, 1000) <= probability:
+                                    new_sickness = [randint(0, engine.entities.max_codes) for _ in range(engine.config.sickness_number_of_codes)]
+                                    new_sickness.sort()
+                                    if new_sickness not in node["sicknesses"]:
+                                        node["sicknesses"].append(new_sickness)
+                            
+                            # Spread a sickness to a neighbor
+                            if len(node["sicknesses"]) > 0:
+                                if node["type"] == engine.entities.TYPE_WALL:
+                                    probability = engine.config.default_sickness_propagation_probability * engine.config.wall_sickness_multiplier * 100
+                                else:
+                                    probability = engine.config.default_sickness_propagation_probability * 100
                                 if randint(1, 100) <= probability:
-                                    node["sicknesses"].remove(sickness)
-                                    # TODO: Add immunity
-
-                        # Become sick from a random sickness
-                        if len(node["sicknesses"]) < engine.config.default_max_sicknesses:
-                            if node["type"] == engine.entities.TYPE_WALL:
-                                probability = engine.config.default_random_sickness_appearance_probability * engine.config.wall_sickness_multiplier * 1000
-                            else:
-                                probability = engine.config.default_random_sickness_appearance_probability*1000
-                            if randint(1, 1000) <= probability:
-                                new_sickness = [randint(0, engine.entities.max_codes) for _ in range(engine.config.sickness_number_of_codes)]
-                                new_sickness.sort()
-                                if new_sickness not in node["sicknesses"]:
-                                    node["sicknesses"].append(new_sickness)
+                                    sickness_to_spread = choice(node["sicknesses"])
+                                    neighbor = choice([node for node in networkx.neighbors(garden.graph, node_name)])
+                                    if (garden.graph.nodes.get(neighbor)["type"] != engine.entities.TYPE_EMPTY) & (len(garden.graph.nodes.get(neighbor)["sicknesses"]) < engine.config.default_max_sicknesses):
+                                        if not sickness_to_spread in garden.graph.nodes.get(neighbor)["sicknesses"]:
+                                            garden.graph.nodes.get(neighbor)["sicknesses"].append(sickness_to_spread)
                         
-                        # Spread a sickness to a neighbor
-                        if len(node["sicknesses"]) > 0:
-                            if node["type"] == engine.entities.TYPE_WALL:
-                                probability = engine.config.default_sickness_propagation_probability * engine.config.wall_sickness_multiplier * 100
-                            else:
-                                probability = engine.config.default_sickness_propagation_probability * 100
-                            if randint(1, 100) <= probability:
-                                sickness_to_spread = choice(node["sicknesses"])
-                                neighbor = choice([node for node in networkx.neighbors(garden.graph, node_name)])
-                                if (garden.graph.nodes.get(neighbor)["type"] != engine.entities.TYPE_EMPTY) & (len(garden.graph.nodes.get(neighbor)["sicknesses"]) < engine.config.default_max_sicknesses):
-                                    if not sickness_to_spread in garden.graph.nodes.get(neighbor)["sicknesses"]:
-                                        garden.graph.nodes.get(neighbor)["sicknesses"].append(sickness_to_spread)
-                    
-                    # Seeds and trees
-                    if node["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
-                        # Decrease health if sick
-                        if len(node["sicknesses"]) > 0:
-                            for sickness in node["sicknesses"]:
-                                # Decrease health
-                                node["health"] -= (
-                                        engine.config.default_sickness_health_penalty # Base penalty for every sickness
-                                        + engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in sickness) # Increase the penalty if the sickness' code matches with that of the seed/tree 
-                                        - engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in engine.entities.protection_codes)) # Cancel penalties for each protection code in the seed/tree DNA code
+                        # Seeds and trees
+                        if node["type"] in [engine.entities.TYPE_SEED, engine.entities.TYPE_TREE]:
+                            # Decrease health if sick
+                            if len(node["sicknesses"]) > 0:
+                                for sickness in node["sicknesses"]:
+                                    # Decrease health
+                                    node["health"] -= (
+                                            engine.config.default_sickness_health_penalty # Base penalty for every sickness
+                                            + engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in sickness) # Increase the penalty if the sickness' code matches with that of the seed/tree 
+                                            - engine.config.default_sickness_health_penalty*sum(node["code"].count(x) for x in engine.entities.protection_codes)) # Cancel penalties for each protection code in the seed/tree DNA code
+                            
+                            # Regenerate health
+                            max_health = engine.config.default_max_health + engine.config.health_code_increase * sum(node["code"].count(x) for x in engine.entities.health_codes)
+                            if node["health"] < max_health:
+                                node["health"] = round(node["health"] * engine.config.default_health_regeneration_multiplier, 1) 
+                                if node["health"] > max_health: node["health"] = max_health
+                            
+                            # Remove node if health <= 0
+                            if node["health"] <= 0:
+                                reset_node_properties(node)
+                                garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 0
+                                continue
                         
-                        # Regenerate health
-                        max_health = engine.config.default_max_health + engine.config.health_code_increase * sum(node["code"].count(x) for x in engine.entities.health_codes)
-                        if node["health"] < max_health:
-                            node["health"] = round(node["health"] * engine.config.default_health_regeneration_multiplier, 1) 
-                            if node["health"] > max_health: node["health"] = max_health
-                        
-                        # Remove node if health <= 0
-                        if node["health"] <= 0:
-                            reset_node_properties(node)
-                            garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 0
-                            continue
-                    
-                    # Seeds
-                    if node["type"] == engine.entities.TYPE_SEED:
-                        # Grow seed
-                        if randint(1, 100) <= (engine.config.default_growth_probability*100):
-                            node["growth"] += 1 + engine.config.growth_code_increase*(sum(node["code"].count(x) for x in growth_codes))
-                            if node["growth"] >= default_max_growth:
-                                node["type"] = engine.entities.TYPE_TREE
-                                garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 2
-
-                    # Trees
-                    if node["type"] == engine.entities.TYPE_TREE:
-                        # Production
-                        tree_production = engine.config.default_production + production_code_increase*(sum(node["code"].count(x) for x in engine.entities.production_codes))
-                        total_production += tree_production # Total production
-                        cycle_production += tree_production # Production from this cycle, to display
-                        
-                        # Propagate seed
-                        if randint(1, 100) <= (engine.config.default_seed_propagation_probability * 100):
-                            # Choose a random node among the empty ones, if any
-                            empty_neighbors = [n for n in networkx.neighbors(garden.graph, node_name) if garden.graph.nodes[n]["type"] == engine.entities.TYPE_EMPTY]
-                            if len(empty_neighbors) > 0:
-                                chosen_node_name = choice(empty_neighbors)
-                                chosen_node = garden.graph.nodes[chosen_node_name]
-                                
-                                # Update node for logic
-                                chosen_node["type"] = engine.entities.TYPE_SEED
-                                chosen_node["health"] = engine.config.default_seed_starting_health # TODO: Remove if unnecessary
-                                chosen_node["code"] = node["code"].copy()
-                                chosen_node["greatest_ancestor"] = node["greatest_ancestor"] if node["greatest_ancestor"] is not None else {
-                                    "name": f"{engine.entities.get_species_name(node["code"])} Tree", "coordinates": node_name}
-                                
-                                # Try to mutate seed
-                                if randint(1, 100) <= (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation_codes)))*100:
-                                    # Choose a random code to mutate
-                                    i = randint(0, len(chosen_node["code"]) - 1)
-                                    chosen_node["code"][i] = randint(0, engine.entities.max_codes - 1)
-                                    chosen_node["code"].sort()
-                                
-                                # Update tile for drawing
-                                chosen_tile = garden.garden_tiles[chosen_node_name[1]][chosen_node_name[0]]
-                                chosen_tile.tile_number = 1 
+                        # Seeds
+                        if node["type"] == engine.entities.TYPE_SEED:
+                            # Grow seed
+                            if randint(1, 100) <= (engine.config.default_growth_probability*100):
+                                node["growth"] += 1 + engine.config.growth_code_increase*(sum(node["code"].count(x) for x in growth_codes))
+                                if node["growth"] >= default_max_growth:
+                                    node["type"] = engine.entities.TYPE_TREE
+                                    garden.garden_tiles[node_name[1]][node_name[0]].tile_number = 2
+    
+                        # Trees
+                        if node["type"] == engine.entities.TYPE_TREE:
+                            # Production
+                            tree_production = engine.config.default_production + production_code_increase*(sum(node["code"].count(x) for x in engine.entities.production_codes))
+                            total_production += tree_production # Total production
+                            cycle_production += tree_production # Production from this cycle, to display
+                            
+                            # Propagate seed
+                            if randint(1, 100) <= (engine.config.default_seed_propagation_probability * 100):
+                                # Choose a random node among the empty ones, if any
+                                empty_neighbors = [n for n in networkx.neighbors(garden.graph, node_name) if garden.graph.nodes[n]["type"] == engine.entities.TYPE_EMPTY]
+                                if len(empty_neighbors) > 0:
+                                    chosen_node_name = choice(empty_neighbors)
+                                    chosen_node = garden.graph.nodes[chosen_node_name]
+                                    
+                                    # Update node for logic
+                                    chosen_node["type"] = engine.entities.TYPE_SEED
+                                    chosen_node["health"] = engine.config.default_seed_starting_health # TODO: Remove if unnecessary
+                                    chosen_node["code"] = node["code"].copy()
+                                    chosen_node["greatest_ancestor"] = node["greatest_ancestor"] if node["greatest_ancestor"] is not None else {
+                                        "name": f"{engine.entities.get_species_name(node["code"])} Tree", "coordinates": node_name}
+                                    
+                                    # Try to mutate seed
+                                    if randint(1, 100) <= (engine.config.default_mutation_probability + (mutation_mutation_increase * sum(node["code"].count(x) for x in engine.entities.mutation_codes)))*100:
+                                        # Choose a random code to mutate
+                                        i = randint(0, len(chosen_node["code"]) - 1)
+                                        chosen_node["code"][i] = randint(0, engine.entities.max_codes - 1)
+                                        chosen_node["code"].sort()
+                                    
+                                    # Update tile for drawing
+                                    chosen_tile = garden.garden_tiles[chosen_node_name[1]][chosen_node_name[0]]
+                                    chosen_tile.tile_number = 1 
 
         # DRAWING
         engine.config.screen.fill("white")
@@ -368,13 +395,25 @@ def main():
         for row in garden.garden_tiles:
             for tile in row:
                 tile.variant = False
-        
-        if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
-            garden.garden_tiles[selected_tile_y][selected_tile_x].variant = True
-            draw_tree_tooltip(engine.config.screen, (selected_tile_x, selected_tile_y), garden.graph.nodes[(selected_tile_x, selected_tile_y)])
+            
+        if len(menu_stack) == 0:
+            if 0 <= selected_tile_x < garden.size_x and 0 <= selected_tile_y < garden.size_y:
+                garden.garden_tiles[selected_tile_y][selected_tile_x].variant = True
+                draw_tree_tooltip(engine.config.screen, (selected_tile_x, selected_tile_y), garden.graph.nodes[(selected_tile_x, selected_tile_y)])
         
         # Display time
         engine.ui.display_status_bar(simulation_running, cycle_count, time_to_next_cycle, cycle_production, total_production)
+        
+        # Display menus
+        if len(menu_stack) > 0:
+            while len(menu_stack) > 0: 
+                if menu_stack[-1].is_open():
+                    break
+                menu_stack.pop()
+                
+            # Check if we just removed every menu or if there is still at least one
+            if len(menu_stack) > 0:
+                menu_stack[-1].draw() # If there is, draw it.
         
         pygame.display.flip() # Flip buffer
         engine.config.clock.tick(60)

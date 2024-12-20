@@ -2,13 +2,15 @@
 import os
 from abc import abstractmethod, ABC
 from math import floor
+from random import choice
 
 import pygame
 from networkx.classes import Graph
 
 import engine.config
 import engine.entities
-
+from engine.entities import codes
+from engine.events import EventHandler
 
 time_display_height = 30
 
@@ -98,6 +100,121 @@ def draw_tree_tooltip(screen, node_coordinates: tuple, node_properties: dict):
     for i in range(len(rows)):
         screen.blit(rows[i], (position[0] + 5, position[1] + 5 + sum(5 + row.get_height() for row in rows[:i])))
 
+
+class UIMenu:
+    _is_open = False
+    
+    @abstractmethod
+    def open(self, event_handler: EventHandler):
+        pass
+    
+    @abstractmethod
+    def close(self):
+        pass
+    
+    @abstractmethod
+    def draw(self):
+        pass
+    
+    def is_open(self) -> bool:
+        return self._is_open
+    
+
+class CreateTreeMenu(UIMenu):
+    def __init__(self):
+        self._old_handlers = None
+        self.event_handler = None
+        self._inventory = None
+        self._current_selection = 0
+        self._current_configuration = {
+            0: 0, # Production
+            1: 0, # Growth
+            2: 0, # Mutation
+            3: 0, # Protection
+            4: 0  # Health
+        }
+
+    def open(self, event_handler: EventHandler, inventory):
+        # Copy event handler
+        self._old_handlers = event_handler.handlers
+        
+        # Reset event handler
+        event_handler.handlers = {}
+        event_handler.handlers[pygame.KEYDOWN] = {}
+        self.event_handler = event_handler
+        
+        # Copy inventory
+        self._inventory = inventory
+        
+        # Add new mappings
+        event_handler.add_key_handler(pygame.K_ESCAPE, self.close_event)
+        event_handler.add_key_handler(pygame.K_DOWN, self.select_next_item)
+        event_handler.add_key_handler(pygame.K_UP, self.select_previous_item)
+        event_handler.add_key_handler(pygame.K_RIGHT, self.increase_current_item)
+        event_handler.add_key_handler(pygame.K_LEFT, self.decrease_current_item)
+        event_handler.add_key_handler(pygame.K_RETURN, self.save_to_inventory)
+        
+        self._is_open = True
+
+    def close_event(self, event):
+        self.close()
+        
+    def close(self):
+        self._is_open = False
+        # Return to old event handler
+        self.event_handler.handlers = self._old_handlers
+
+    def select_next_item(self, event):
+        self._current_selection += 1
+        self._current_selection %= 5
+    
+    def select_previous_item(self, event):
+        self._current_selection -= 1
+        self._current_selection %= 5
+    
+    def increase_current_item(self, event):
+        current_count = sum(self._current_configuration[x] for x in self._current_configuration)
+        if current_count < 3:
+            self._current_configuration[self._current_selection] += 1
+    
+    def decrease_current_item(self, event):
+        if self._current_configuration[self._current_selection] > 0:
+            self._current_configuration[self._current_selection] -= 1  
+    
+    def save_to_inventory(self, event):
+        # Generate code
+        code = []
+        for i in range(5):
+            if self._current_configuration[i] > 0:
+                for j in range(self._current_configuration[i]):
+                    code.append(choice(codes[i]))
+        self._inventory.change_preset({"type": "tree", "code": code})
+        self.close()
+        
+    def draw(self):        
+        rows = []
+        rows.append(engine.config.font_big.render(f"Production: {self._current_configuration[0]}", True, (255, 255 - (60*self._current_configuration[0]), 255)))
+        rows.append(engine.config.font_big.render(f"Growth: {self._current_configuration[1]}", True, (255 - (60*self._current_configuration[1]), 255, 255)))
+        rows.append(engine.config.font_big.render(f"Mutation: {self._current_configuration[2]}", True, (255, 255, 255 - (60*self._current_configuration[2]))))
+        rows.append(engine.config.font_big.render(f"Protection: {self._current_configuration[3]}", True, (*[255 - (60*self._current_configuration[3]) for _ in range(2)], 255)))
+        rows.append(engine.config.font_big.render(f"Health: {self._current_configuration[4]}", True, (255, *[255 - (60*self._current_configuration[4]) for _ in range(2)])))
+
+        # Create a background rectangle
+        # box_width = engine.config.screen_width - 40
+        box_width = (20 + 5 + max(row.get_width() for row in rows) + 20 + 5)
+        box_height = (20 + 5 + sum(row.get_height() for row in rows) + 20 + 5)
+
+        bg_rect = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        bg_rect.fill((0, 0, 0, 240))
+
+        engine.config.screen.blit(bg_rect, (50, 50))
+        
+        for i in range(len(rows)):
+            offset_x = 0
+            if i == self._current_selection:
+                offset_x = 20
+            engine.config.screen.blit(rows[i], (70 + offset_x, 70 + i*5 + sum(row.get_height() for row in rows[:i])))
+        
 
 class GardenTile(pygame.sprite.Sprite):
     def __init__(self, tileset_path, tile_number, size: int, *groups):

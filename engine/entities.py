@@ -16,6 +16,13 @@ growth_codes = [x for x in range(3, 6)]
 mutation_codes = [x for x in range(6, 9)]
 protection_codes = [x for x in range(9, 12)]
 health_codes = [x for x in range(12, 15)]
+codes = [
+    production_codes,
+    growth_codes,
+    mutation_codes,
+    protection_codes,
+    health_codes
+]
 max_codes = 15
 
 production = production_codes[0]
