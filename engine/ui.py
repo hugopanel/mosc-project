@@ -207,13 +207,13 @@ class CreateTreeMenu(UIMenu):
         bg_rect = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
         bg_rect.fill((0, 0, 0, 240))
 
-        engine.config.screen.blit(bg_rect, (50, 50))
+        engine.config.screen.blit(bg_rect, (0, 50))
         
         for i in range(len(rows)):
             offset_x = 0
             if i == self._current_selection:
                 offset_x = 20
-            engine.config.screen.blit(rows[i], (70 + offset_x, 70 + i*5 + sum(row.get_height() for row in rows[:i])))
+            engine.config.screen.blit(rows[i], (20 + offset_x, 70 + i*5 + sum(row.get_height() for row in rows[:i])))
 
 
 class ChangeProbabilitiesMenu(UIMenu):
@@ -355,13 +355,13 @@ class ChangeProbabilitiesMenu(UIMenu):
         bg_rect = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
         bg_rect.fill((0, 0, 0, 240))
 
-        engine.config.screen.blit(bg_rect, (50, 50))
+        engine.config.screen.blit(bg_rect, (0, 50))
 
         for i in range(len(rows)):
             offset_x = 0
             if i == self._current_selection:
                 offset_x = 20
-            engine.config.screen.blit(rows[i], (70 + offset_x, 70 + i*5 + sum(row.get_height() for row in rows[:i])))
+            engine.config.screen.blit(rows[i], (20 + offset_x, 70 + i*5 + sum(row.get_height() for row in rows[:i])))
         
 
 class GardenTile(pygame.sprite.Sprite):

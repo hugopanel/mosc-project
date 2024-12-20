@@ -18,10 +18,10 @@ from engine.ui import draw_tree_tooltip
 
 class Inventory:
     def __init__(self):
-        self.items = ["1", "2", "3", "4", "W", "E"]
+        self.items = ["1 [0, 0, 0]", "2 [3, 3, 3]", "3 [6, 6, 6]", "4 [9, 9, 9]", "W", "E"]
         self.selected_item = 0
         self.position = (0, 0)
-        self.width = 50
+        self.min_width = 50
         self.height = 50
         self.presets = [
             {"type": "Tree", "code": [engine.entities.production, engine.entities.production, engine.entities.production]},
@@ -36,7 +36,10 @@ class Inventory:
         self.selected_item = item_number % len(self.items)
     
     def change_preset(self, preset, item=None):
-        self.presets[item if item is not None else self.selected_item] = preset
+        item = item if item is not None else self.selected_item
+        if item < 4:
+            self.presets[item] = preset
+            self.items[item] = f"{item + 1} {preset["code"]}"
 
     def draw(self):
         if self.selected_item == 4:
@@ -51,10 +54,11 @@ class Inventory:
 
         font = pygame.font.SysFont("default", 50, False, False)
         text = font.render(str(self.items[self.selected_item]), True, fg_color)
-        pygame.draw.rect(engine.config.screen, bg_color, (self.position[0], self.position[1], self.width, self.height))
+        width = max(self.min_width, (text.get_width() + 20))
+        pygame.draw.rect(engine.config.screen, bg_color, (self.position[0], self.position[1], width, self.height))
         engine.config.screen.blit(text,
                                   (
-                                      self.position[0] + round(self.width / 2) - round(text.get_width() / 2),
+                                      self.position[0] + round(width / 2) - round(text.get_width() / 2),
                                       self.position[1] + round(self.height / 2) - round(text.get_height()) / 2
                                   )
                                   )  # center the text
@@ -231,9 +235,10 @@ def main():
 
     menu_stack = []
     def open_custom_tree_menu(event):
-        menu = engine.ui.CreateTreeMenu()
-        menu_stack.append(menu)
-        menu.open(event_handler, inventory)
+        if inventory.selected_item < 4:
+            menu = engine.ui.CreateTreeMenu()
+            menu_stack.append(menu)
+            menu.open(event_handler, inventory)
     def open_probability_settings_menu(event):
         menu = engine.ui.ChangeProbabilitiesMenu()
         menu_stack.append(menu)
