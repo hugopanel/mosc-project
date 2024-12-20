@@ -18,16 +18,16 @@ from engine.ui import draw_tree_tooltip
 
 class Inventory:
     def __init__(self):
-        self.items = ["[0, 0, 0]", "[3, 3, 3]", "[6, 6, 6]", "[9, 9, 9]", "W", "E"]
+        self.items = ["[0, 0, 0]", "[2, 2, 2]", "[6, 6, 6]", "[0, 0, 0]", "W", "E"]
         self.selected_item = 0
         self.position = (0, 0)
         self.min_width = 50
         self.height = 50
         self.presets = [
             {"type": "Tree", "code": [engine.entities.production, engine.entities.production, engine.entities.production]},
-            {"type": "Tree", "code": [engine.entities.growth, engine.entities.growth, engine.entities.growth]},
+            {"type": "Tree", "code": [2, 2, 2]},
             {"type": "Tree", "code": [engine.entities.mutation, engine.entities.mutation, engine.entities.mutation]},
-            {"type": "Sickness", "code": [engine.entities.protection, engine.entities.protection, engine.entities.protection]},
+            {"type": "Sickness", "code": [engine.entities.production, engine.entities.production, engine.entities.production]},
             {"type": "Wall", "code": []},
             {"type": "Eraser", "code": []}
         ]
