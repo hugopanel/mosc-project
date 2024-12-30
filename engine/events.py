@@ -7,20 +7,26 @@ class EventHandler:
         self.handlers[pygame.KEYDOWN] = {}
 
     def add_handler(self, event_type: int, handler: callable) -> None:
-        self.handlers[event_type] = handler
+        if event_type not in self.handlers.keys():
+            self.handlers[event_type] = []
+        self.handlers[event_type].append(handler)
 
     def add_key_handler(self, key: int, handler: callable) -> None:
-        self.handlers[pygame.KEYDOWN][key] = handler
+        if key not in self.handlers[pygame.KEYDOWN]:
+            self.handlers[pygame.KEYDOWN][key] = []
+        self.handlers[pygame.KEYDOWN][key].append(handler)
 
     def handle_event(self, event):
         event_type = event.type
-        if event_type in self.handlers:
+        if event_type in self.handlers.keys():
             if event_type == pygame.KEYDOWN:
                 key = event.key
-                if key in self.handlers[event_type]:
-                    self.handlers[event_type][key](event)
+                if key in self.handlers[event_type].keys():
+                    for handler in self.handlers[event_type][key]:
+                        handler(event)
             else:
-                self.handlers[event_type](event)
+                for handler in self.handlers[event_type]:
+                    handler(event)
 
     def pump_events(self):
         for event in pygame.event.get():
